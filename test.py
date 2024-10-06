@@ -5,7 +5,13 @@ import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from PyPDF2 import PdfReader
-from app import get_pdf_text, get_text_chunks, get_vector_store, user_input
+from app import (
+    get_pdf_text,
+    get_text_chunks,
+    get_vector_store,
+    user_input,
+    format_response_for_frontend,
+)
 
 # Define default legal documents
 DEFAULT_DOCS = [
@@ -32,7 +38,12 @@ def process_file_and_text(file: Optional[bytes], file_name: str, text: str):
 
         # Return result if a text query is provided
         if text:
-            return user_input(text)
+            # Get the AI response
+            ai_response = user_input(text)
+
+            # Format the response for the frontend
+            formatted_response = format_response_for_frontend(ai_response)
+            return formatted_response
         else:
             return "File uploaded and processed successfully. No query provided."
 
@@ -45,6 +56,10 @@ def process_file_and_text(file: Optional[bytes], file_name: str, text: str):
             get_vector_store(text_chunks, is_new_files=False)
 
         # Handle text query
-        return user_input(text)
+        ai_response = user_input(text)
+
+        # Format the response for the frontend
+        formatted_response = format_response_for_frontend(ai_response)
+        return formatted_response
 
     return "No file or text provided."

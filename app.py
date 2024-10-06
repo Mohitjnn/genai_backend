@@ -6,6 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 import os
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -120,3 +121,28 @@ def user_input(user_question):
         return response["output_text"]
     except Exception as e:
         raise Exception(f"Error generating response: {str(e)}")
+
+
+# Function to format the response for frontend
+def format_response_for_frontend(response):
+    # Replace markdown-like bold (**text**) with <strong>text</strong>
+    response = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", response)
+
+    # Replace newlines \n with <br/>
+    response = response.replace(
+        "\n\n", "<br/><br/>"
+    )  # For double newlines (paragraph breaks)
+    response = response.replace("\n", "<br/>")  # For single newlines (line breaks)
+
+    return response
+
+
+# Main function to handle the user query, process PDF text, and generate a formatted response
+def handle_user_query(query):
+    # Example to retrieve existing FAISS index and generate AI response
+    ai_response = user_input(query)
+
+    # Format the response for frontend display
+    formatted_response = format_response_for_frontend(ai_response)
+
+    return formatted_response
