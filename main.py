@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
-from MachineLearning.test import process_file_and_text
+from test import process_file_and_text
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
