@@ -6,7 +6,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins="http://192.168.29.147:3000", #replace with your own ipv4 address:3000
+    allow_origins="http://192.168.29.147:3000",  # replace with your own ipv4 address:3000
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,7 +29,7 @@ async def submit_text_route(description: str = Form(...)):  # Text is now requir
 
 
 # Route for submitting both file and text (both are required)
-@app.post("/file_and_text/")
+@app.post("/file_and_text")
 async def upload_file_and_text_route(
     file: UploadFile = File(...),  # File is now required
     description: str = Form(...),  # Text is now required
