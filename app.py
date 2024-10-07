@@ -4,6 +4,10 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
+import google.generativeai as genai
+from langdetect import detect
+from deep_translator import GoogleTranslator
 import os
 from dotenv import load_dotenv
 import re
@@ -11,9 +15,8 @@ import re
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
-# Configure GenAI API
-import google.generativeai as genai
 
+# Configure GenAI API
 genai.configure(api_key=api_key)
 
 
@@ -71,9 +74,7 @@ def get_vector_store(text_chunks, is_new_files=False):
 # Function to initialize the conversation chain with GenAI
 def get_conversational_chain():
     context = """
-    You are an AI model designed to assist as a legal consultant knowledgeable about the Constitution of India and the Indian Penal Code. 
-    You are provided with PDF files containing legal documents, along with a query related to those documents. Your task is to 
-    extract relevant legal information from the provided documents and answer the query with accuracy.
+    You are an AI model designed to assist as a legal consultant knowledgeable about the Constitution of India and the Indian Penal Code. You are provided with one or more PDF files containing legal documents of individuals, along with a legal query related to those documents. Your task is to extract relevant legal information from the provided documents and answer the legal query with accuracy and detail.
     """
 
     # Define a prompt template to customize the interaction
@@ -82,12 +83,27 @@ def get_conversational_chain():
     - **PDF Legal Document(s)**: {documents}
     - **Query**: {query}
 
+    ### Steps:
+    1. **Understand the Query**: Carefully read and comprehend the legal query or issue presented by the user.
+    2. **Extract Relevant Information**: Analyze the provided PDFs to identify and extract pertinent information or clauses relevant to the query.
+    3. **Identify Relevant Laws**: Determine which sections of the Constitution of India or the Indian Penal Code apply to the query.
+    4. **Research or Recall Details**: Use your knowledge or reference materials to gather detailed information about the relevant laws and their interpretations.
+    5. **Analyze the Situation**: Consider how the laws and the information from the documents apply to the specific circumstances of the query.
+    6. **Provide Clear Advice**: Offer a well-structured and legally sound response or advice, ensuring it addresses all aspects of the query.
+    7. **Include Citations**: If applicable, refer to specific articles, sections, or precedents that support the response.
+
     ### Output Format:
-    Provide a detailed and structured paragraph response, citing specific legal provisions when necessary.
+    Provide a detailed and structured paragraph response that includes citations to specific legal provisions when possible.
+    Ensure that the advice is legally accurate.
     """
 
     # Initialize the Google Generative AI model
     model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
+
+    # Create a prompt template that dynamically accepts documents and user queries
+    prompt = PromptTemplate(
+        template=prompt_template, input_variables=["documents", "query"]
+    )
 
     # Create a question-answering chain using the model
     chain = load_qa_chain(llm=model, chain_type="stuff")
@@ -95,8 +111,38 @@ def get_conversational_chain():
     return chain
 
 
-# Function to handle user query and return AI-generated response
+def detect_language(text):
+    return detect(text)
+
+
+# Function to translate text into the target language
+def translate_text(text, target_language):
+    return GoogleTranslator(source="auto", target=target_language).translate(text)
+
+
+# Modify the `user_input` function to include language detection and translation to English before processing
 def user_input(user_question):
+    # Detect the language of the query
+    query_language = detect_language(user_question)
+
+    # Translate the query to English if it is not already in English
+    if query_language != "en":
+        print(f"Translating query from {query_language} to English...")
+        user_question = translate_text(user_question, "en")
+
+    # Process the query with AI and get the response in English (default)
+    ai_response = process_ai_response(user_question)
+
+    # If the query was not originally in English, translate the AI response back to the original language
+    if query_language != "en":
+        print(f"Translating response back to {query_language}...")
+        ai_response = translate_text(ai_response, query_language)
+
+    return ai_response
+
+
+# Function to handle the AI query processing (same as your original logic)
+def process_ai_response(user_question):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
     try:
         vector_store = FAISS.load_local(
