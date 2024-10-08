@@ -13,18 +13,31 @@ def search_indian_kanoon(query):
 
     # Extract search results
     results = []
-    for i, result_item in enumerate(soup.find_all('div', class_='result_title')):
-        if i >= 6:  # Limit to the first 6 results
-            break
-        title = result_item.get_text().strip()
-        link = "https://indiankanoon.org" + result_item.find('a')['href']
-        results.append({"title": title, "link": link})
+    counter = 0  # Initialize counter to limit results
 
-    # Print the results
+    for result_item in soup.find_all('div', class_='result'):
+        if counter >= 6:  # Stop after 6 results
+            break
+
+        title = result_item.find('div', class_='result_title').get_text().strip().replace('\n', '')
+        link = "https://indiankanoon.org" + result_item.find('a')['href']
+
+        # Extract and concatenate content within 'headline' class
+        headline_tag = result_item.find('div', class_='headline')
+        if headline_tag:
+            # Concatenate all the text in the 'headline' tag into one string and remove newlines
+            headline = ''.join(headline_tag.stripped_strings).replace('\n', '')
+        else:
+            headline = "No headline available"
+
+        results.append({"title": title, "link": link, "headline": headline})
+        counter += 1  # Increment counter for each result
+
+    # Print the results with minimal spaces
     for result in results:
-        print(f"{result['title']}: {result['link']}")
+        print(f"Title: {result['title']}\nLink: {result['link']}")
+        print(f"Headline: {result['headline']}\n")
 
 if __name__ == "__main__":
     query = input("Enter your query: ")
     search_indian_kanoon(query)
-    
