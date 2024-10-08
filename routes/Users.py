@@ -16,6 +16,7 @@ from utils.auth import get_user
 import os
 from dotenv import load_dotenv
 from test import process_file_and_text
+from scrape import search_indian_kanoon
 
 load_dotenv(".env")
 
@@ -114,4 +115,13 @@ async def upload_file_and_text_route(
 ):
     files_content = await file.read()
     result = process_file_and_text(files_content, file.filename, description)
+    return result
+
+
+@users_root.post("/cases")
+async def submit_case_route(
+    caseDetails: Annotated[str, Form(...)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    result = search_indian_kanoon(caseDetails)
     return result
