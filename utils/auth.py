@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import jwt
-from config.config import blogs_collection
 from passlib.context import CryptContext
+from config.config import blogs_collection
 from models.model import UserInDB
 import os
 from datetime import timedelta

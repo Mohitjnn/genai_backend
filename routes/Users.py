@@ -121,7 +121,7 @@ async def upload_file_and_text_route(
 @users_root.post("/cases")
 async def submit_case_route(
     caseDetails: Annotated[str, Form(...)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    # current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = search_indian_kanoon(caseDetails)
     return result

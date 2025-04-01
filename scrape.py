@@ -7,7 +7,7 @@ def search_indian_kanoon(query):
     response = requests.get(search_url)
 
     if response.status_code != 200:
-        return {"error": "Failed to fetch results"}
+        return {"error": f"Failed to fetch results, {response}"}
 
     soup = BeautifulSoup(response.text, "html.parser")
 
