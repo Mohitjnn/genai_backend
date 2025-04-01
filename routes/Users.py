@@ -98,7 +98,7 @@ async def upload_file_route(
 @users_root.post("/text")
 async def submit_text_route(
     description: Annotated[str, Form(...)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    # current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = getSummary(description)
     return result

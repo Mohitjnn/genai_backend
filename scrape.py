@@ -1,41 +1,74 @@
+import os
+import json
 import requests
-from bs4 import BeautifulSoup
+import http.client
+import urllib.parse
+
+
+class IKApiClient:
+    def __init__(self, token):
+        self.headers = {
+            'Authorization': f'Token {token}',
+            'Accept': 'application/json'
+        }
+        self.basehost = 'api.indiankanoon.org'
+
+    def call_api(self, url):
+        """Call the Indian Kanoon API."""
+        try:
+            connection = http.client.HTTPSConnection(self.basehost)
+            connection.request('POST', url, headers=self.headers)
+            response = connection.getresponse()
+            results = response.read()
+
+            if isinstance(results, bytes):
+                results = results.decode('utf8')
+
+            return results
+        except Exception as e:
+            return json.dumps({"errmsg": f"API call failed: {str(e)}"})
+
+    def search(self, query, pagenum=0, maxpages=1):
+        """Search Indian Kanoon with the provided query."""
+        q = urllib.parse.quote_plus(query.encode('utf8'))
+        url = f'/search/?formInput={q}&pagenum={pagenum}&maxpages={maxpages}'
+        return self.call_api(url)
 
 
 def search_indian_kanoon(query):
-    search_url = f"https://indiankanoon.org/search/?formInput={query.replace(' ', '+')}"
-    response = requests.get(search_url)
+    """Search Indian Kanoon and return formatted results."""
+    # Initialize API client with token
+    token = "0ca52cdc1fd70a83184e00a6ace08a0c2c59d235"  # Using the token from your code
+    api_client = IKApiClient(token)
 
-    if response.status_code != 200:
-        return {"error": f"Failed to fetch results, {response}"}
+    # Search using the API
+    results = api_client.search(query)
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    try:
+        # Parse JSON response
+        data = json.loads(results)
 
-    # Extract search results
-    results = []
-    counter = 0  # Initialize counter to limit results
+        # Check for errors
+        if 'errmsg' in data:
+            return {"error": data['errmsg']}
 
-    for result_item in soup.find_all("div", class_="result"):
-        if counter >= 6:  # Stop after 6 results
-            break
+        # Format results (limited to 6)
+        formatted_results = []
+        if 'docs' in data:
+            for i, doc in enumerate(data['docs']):
+                if i >= 6:  # Limit to 6 results
+                    break
 
-        title = (
-            result_item.find("div", class_="result_title")
-            .get_text()
-            .strip()
-            .replace("\n", "")
-        )
-        link = "https://indiankanoon.org" + result_item.find("a")["href"]
+                formatted_results.append({
+                    "title": doc['title'],
+                    "link": f"https://indiankanoon.org/doc/{doc['tid']}/",
+                    "description": doc.get('headline', 'No headline available')
+                })
 
-        # Extract and concatenate content within 'headline' class
-        headline_tag = result_item.find("div", class_="headline")
-        if headline_tag:
-            # Concatenate all the text in the 'headline' tag into one string and remove newlines
-            description = "".join(headline_tag.stripped_strings).replace("\n", "")
-        else:
-            description = "No headline available"
+        return formatted_results
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse API response"}
+    except Exception as e:
+        return {"error": f"Error processing results: {str(e)}"}
 
-        results.append({"title": title, "link": link, "description": description})
-        counter += 1  # Increment counter for each result
 
-    return results
