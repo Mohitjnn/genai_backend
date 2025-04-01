@@ -9,7 +9,7 @@ from fastapi import (
     Form,
 )
 import jwt
-from jwt.exceptions import InvalidTokenError
+from utils.nlp import getSummary, getPdfSummary
 from models.model import TokenData, User
 from typing import Annotated
 from utils.auth import get_user
@@ -55,9 +55,6 @@ async def get_current_user(
         if email is None:
             raise credentials_exception
         token_data = TokenData(email=email)
-    except InvalidTokenError as e:
-        print("Token error:", str(e))  # Debug statement
-        raise credentials_exception
     except Exception as e:
         print("Decoding error:", str(e))  # Debug statement
         raise credentials_exception
@@ -92,17 +89,18 @@ async def upload_file_route(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     files_content = await file.read()
-    result = process_file_and_text(files_content, file.filename, "")
+    result = getPdfSummary(files_content, file.filename)
+    
     return result
 
 
-# Route for submitting only text (description is required)
+# Route for submitting only text and getting summary (description is required)
 @users_root.post("/text")
 async def submit_text_route(
     description: Annotated[str, Form(...)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = process_file_and_text(b"", "", description)
+    result = getSummary(description)
     return result
 
 
